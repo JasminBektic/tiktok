@@ -1,0 +1,31 @@
+#!/usr/bin/env php
+<?php
+
+##################### DUMMY DATA ##############################
+$data = [
+    'userId' => '@realmadrid',
+    'videoIds' => [
+        '6721977173101579526',
+        '6790047240896531717',
+        '6791173429564345605',
+    ]
+];
+##################### DUMMY DATA ##############################
+
+include_once __DIR__ . "/../bootstrap/app.php";
+
+use TikTok\Handlers\VideoHandler;
+use TikTok\Repositories\VideoRepository;
+
+/**
+ * Scraping data
+ */
+$videoHandler = new VideoHandler;
+$responses = $videoHandler->fetch($data);
+$preparedData = $videoHandler->prepareData($responses);
+
+/**
+ * Inserting scraped data into db
+ */
+$videoRepository = new VideoRepository;
+$videoRepository->save($preparedData);

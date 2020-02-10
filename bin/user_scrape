@@ -1,0 +1,28 @@
+#!/usr/bin/env php
+<?php
+
+##################### DUMMY DATA ##############################
+$data = [
+    '@realmadrid',
+    '@flighthouse',
+    '@dobretwins',
+];
+##################### DUMMY DATA ##############################
+
+include_once __DIR__ . "/../bootstrap/app.php";
+
+use TikTok\Handlers\UserHandler;
+use TikTok\Repositories\UserRepository;
+
+/**
+ * Scraping data
+ */
+$userHandler = new UserHandler;
+$responses = $userHandler->fetch($data);
+$preparedData = $userHandler->prepareData($responses);
+
+/**
+ * Inserting scraped data into db
+ */
+$userRepository = new UserRepository;
+$userRepository->save($preparedData);
