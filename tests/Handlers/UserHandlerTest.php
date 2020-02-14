@@ -13,26 +13,34 @@ class UserHandlerTest extends TestCase
         $this->assertEmpty($response);
     }
 
-    public function test_fetch_will_ignore_wrong_structure()
-    {
+    public function test_user_data_extraction_returns_object() {
+        $encodedData = '
+            <script id="__NEXT_DATA__" type="application/json" crossorigin="anonymous">'
+            .json_encode([
+                'props' => [
+                    'pageProps' => [
+                        'userData' => [
+                            'userId' => 1
+                        ]
+                    ]
+                ]
+            ]).
+            '</script>
+        ';
         $userHandler = new UserHandler();
-        $response = $userHandler->fetch([
-            'test' => ['test'], 
-            '@realmadrid'
-        ]);
-
-        $this->assertIsArray($response);
+        $userData = $userHandler->extractUserData($encodedData);
+        
+        $this->assertInstanceOf(stdClass::class, $userData);
     }
 
-    public function test_fetch_has_alphabetic_key()
-    {
+    public function test_user_data_extraction_returns_null() {
+        $encodedData = '
+            <script>{"data":"falseData"}</script>
+        ';
         $userHandler = new UserHandler();
-        $response = $userHandler->fetch(['@realmadrid']);
-
-        $responseArrayKey = key(reset($response));
-        $assertTrue = is_numeric($responseArrayKey) ? false : true;
+        $userData = $userHandler->extractUserData($encodedData);
         
-        $this->assertTrue($assertTrue);
+        $this->assertNull($userData);
     }
 
     public function test_prepare_data_return_safe_empty_array()
