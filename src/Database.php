@@ -101,13 +101,15 @@ class Database
         $sql = 
             "CREATE TABLE IF NOT EXISTS users (
                 id INT(11) AUTO_INCREMENT PRIMARY KEY,
-                user_id VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci UNIQUE KEY,
-                full_name VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+                user_id BIGINT(20) NOT NULL UNIQUE KEY,
+                full_name VARCHAR(160) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
                 description VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                thumbnail VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+                thumbnail VARCHAR(160) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
                 verified TINYINT(2) NOT NULL DEFAULT 0,
-                following INT(10) NOT NULL DEFAULT 0,
-                fans VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL
+                followers BIGINT(20) NOT NULL DEFAULT 0,
+                hearts BIGINT(20) NOT NULL DEFAULT 0,
+                following BIGINT(20) NOT NULL DEFAULT 0,
+                videos INT(10) NOT NULL DEFAULT 0
             );";
 
         self::$connection->exec($sql);

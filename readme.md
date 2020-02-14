@@ -15,6 +15,6 @@ composer update
 ```
 2. Scraping can be triggered trough console, ie.
 ```
-php bin/user_scrape
-php bin/video_scrape
+php bin/scrape_user
+php bin/scrape_video
 ```

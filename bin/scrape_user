@@ -3,9 +3,9 @@
 
 ##################### DUMMY DATA ##############################
 $data = [
-    '@realmadrid',
-    '@flighthouse',
-    '@dobretwins',
+    'realmadrid',
+    'flighthouse',
+    'dobretwins',
 ];
 ##################### DUMMY DATA ##############################
 

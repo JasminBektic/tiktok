@@ -4,13 +4,9 @@ namespace TikTok\Handlers;
 
 use TikTok\Http;
 use GuzzleHttp\Promise;
-use Symfony\Component\DomCrawler\Crawler;
 
 class UserHandler extends Http
 {
-    /** @var Crawler */
-    private $crawler;
-
     public function __construct()
     {
         parent::__construct();
@@ -23,10 +19,7 @@ class UserHandler extends Http
     {
         $promises = [];
         foreach ($userIds as $userId) {
-            if (!is_string($userId)) {
-                continue;
-            }
-            $promises[$userId]= $this->guzzleClient->getAsync("/$userId");
+            $promises[]= $this->guzzleClient->getAsync("/@$userId");
         }
 
         return Promise\settle($promises)->wait();
@@ -39,81 +32,40 @@ class UserHandler extends Http
     {
         $data = [];
         foreach ($responses as $userId => $response) {
-            $this->crawler = new Crawler($response['value']->getBody()->getContents());
-            
-            try {
-                $data[]= [
-                    'userId'        => $userId,
-                    'fullName'      => $this->extractFullName(),
-                    'isVerified'    => $this->extractIsVerified(),
-                    'description'   => $this->extractDescription(),
-                    'thumbnail'     => $this->extractThumbnail(),
-                    'following'     => $this->extractFollowing(),
-                    'fans'          => $this->extractFans(),
-                ];
-            } catch(\Exception $e) {
-                echo $e->getMessage();
+            $user = $this->extractUserData($response['value']->getBody()->getContents());
+
+            if (is_null($user)) {
+                continue;
             }
+            
+            $data[]= [
+                'userId'        => $user->userId,
+                'fullName'      => $user->nickName,
+                'isVerified'    => $user->verified,
+                'description'   => $user->signature,
+                'thumbnail'     => reset($user->coversMedium),
+                'followers'     => $user->fans,
+                'hearts'        => $user->heart,
+                'following'     => $user->following,
+                'videos'        => $user->video,
+            ];
         }
 
         return $data;
     }
 
     /**
-     * full_name
+     * Extract user data from encoded string
      */
-    private function extractFullName() : string
+    public function extractUserData(string $dataEncoded) : ?object
     {
-        return ($node = $this->crawler->filter('#main .share-info .share-title'))->count() > 0 ? $node->text() : '';
-    }
-
-    /**
-     * verified
-     */
-    private function extractIsVerified() : bool
-    {
-        return $this->crawler->filter('#main .share-info .share-sub-title .header-tag .check-icon')->matches('span.check-icon');
-    }
-
-    /**
-     * description
-     */
-    private function extractDescription() : string
-    {
-        return ($node = $this->crawler->filter('#main .share-info .share-desc'))->count() > 0 ? $node->text() : '';
-    }
-
-    /**
-     * thumbnail
-     */
-    private function extractThumbnail() : string
-    {
-        if (($node = $this->crawler->filter('#main .avatar .avatar-wrapper'))->count() == 0) {
-            return '';
-        }
-
         preg_match(
-            '/background-image:url\((.*?)\)/', 
-            $node->extract(['style'])[0], 
-            $thumbnailUrl
+            '/<script id="__NEXT_DATA__" type="application\/json" crossorigin="anonymous">(.*?)<\/script>/',
+            $dataEncoded, 
+            $userData
         );
-        
-        return end($thumbnailUrl);
-    }
+        $userDataDecoded = json_decode(end($userData));
 
-    /**
-     * following
-     */
-    private function extractFollowing() : string
-    {
-        return ($node = $this->crawler->filter('#main .share-info .count-infos')->filterXPath('//span[@title="Following"]'))->count() > 0 ? $node->text() : '';
-    }
-
-    /**
-     * fans
-     */
-    private function extractFans() : string
-    {
-        return ($node = $this->crawler->filter('#main .share-info .count-infos')->filterXPath('//span[@title="Followers"]'))->count() > 0 ? $node->text() : '';
+        return ($user = @$userDataDecoded->props->pageProps->userData) ? $user : null;
     }
 }
