@@ -20,20 +20,28 @@ class VideoRepository
     {
         foreach ($data as $d) {
             $sql = sprintf(
-                "INSERT INTO $this->table (video_id, name, url, comments, duration) 
-                VALUES ('%s', '%s', '%s', '%s', '%.f') 
+                "INSERT INTO $this->table (video_id, name, description, url, thumbnail, comments, interactions, duration, upload_date) 
+                VALUES ('%d', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s') 
                 ON DUPLICATE KEY UPDATE 
-                    video_id='%s', name='%s', url='%s', comments='%s', duration='%.f'",
+                    video_id='%d', name='%s', description='%s', url='%s', thumbnail='%s', comments='%d', interactions='%d', duration='%d', upload_date='%s'",
                 $d['videoId'],
                 $d['name'],
+                $d['description'],
                 $d['url'],
+                $d['thumbnail'],
                 $d['comments'],
+                $d['interactions'],
                 $d['duration'],
+                $d['uploadDate'],
                 $d['videoId'],
                 $d['name'],
+                $d['description'],
                 $d['url'],
+                $d['thumbnail'],
                 $d['comments'],
-                $d['duration']
+                $d['interactions'],
+                $d['duration'],
+                $d['uploadDate']
             );
 
             Database::$connection->query($sql);

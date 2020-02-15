@@ -7,6 +7,11 @@ use GuzzleHttp\Promise;
 
 class UserHandler extends Http
 {
+    /**
+     * @var Object
+     */
+    private $user;
+
     public function __construct()
     {
         parent::__construct();
@@ -31,23 +36,23 @@ class UserHandler extends Http
     public function prepareData(array $responses) : array
     {
         $data = [];
-        foreach ($responses as $userId => $response) {
-            $user = $this->extractUserData($response['value']->getBody()->getContents());
+        foreach ($responses as $response) {
+            $this->extractUserData($response['value']->getBody()->getContents());
 
-            if (is_null($user)) {
+            if (is_null($this->user)) {
                 continue;
             }
             
             $data[]= [
-                'userId'        => $user->userId,
-                'fullName'      => $user->nickName,
-                'isVerified'    => $user->verified,
-                'description'   => $user->signature,
-                'thumbnail'     => reset($user->coversMedium),
-                'followers'     => $user->fans,
-                'hearts'        => $user->heart,
-                'following'     => $user->following,
-                'videos'        => $user->video,
+                'userId'        => $this->extractUserId(),
+                'fullName'      => $this->extractUserName(),
+                'isVerified'    => $this->extractUserVerified(),
+                'description'   => $this->extractUserDescription(),
+                'thumbnail'     => $this->extractUserThumbnail(),
+                'followers'     => $this->extractUserFollowers(),
+                'hearts'        => $this->extractUserHearts(),
+                'following'     => $this->extractUserFollowing(),
+                'videos'        => $this->extractUserVideos(),
             ];
         }
 
@@ -66,6 +71,82 @@ class UserHandler extends Http
         );
         $userDataDecoded = json_decode(end($userData));
 
-        return ($user = @$userDataDecoded->props->pageProps->userData) ? $user : null;
+        isset($userDataDecoded->props->pageProps->userData) ? 
+            $this->user = $userDataDecoded->props->pageProps->userData : 
+            $this->user = null;
+
+        return $this->user;
+    }
+
+    /**
+     * user_id
+     */
+    private function extractUserId() : int
+    {
+        return $this->user->userId;
+    }
+    
+    /**
+     * full_name
+     */
+    private function extractUserName() : string
+    {
+        return $this->user->nickName;
+    }
+
+    /**
+     * verified
+     */
+    private function extractUserVerified() : int
+    {
+        return $this->user->verified;
+    }
+
+    /**
+     * description
+     */
+    private function extractUserDescription() : string
+    {
+        return $this->user->signature;
+    }
+
+    /**
+     * thumbnail
+     */
+    private function extractUserThumbnail() : string
+    {
+        return reset($this->user->coversMedium);
+    }
+
+    /**
+     * followers
+     */
+    private function extractUserFollowers() : int
+    {
+        return $this->user->fans;
+    }
+
+    /**
+     * hearts
+     */
+    private function extractUserHearts() : int
+    {
+        return $this->user->heart;
+    }
+
+    /**
+     * following
+     */
+    private function extractUserFollowing() : int
+    {
+        return $this->user->following;
+    }
+
+    /**
+     * video
+     */
+    private function extractUserVideos() : int
+    {
+        return $this->user->video;
     }
 }

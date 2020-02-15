@@ -122,11 +122,15 @@ class Database
         $sql = 
             "CREATE TABLE IF NOT EXISTS videos (
                 id INT(11) AUTO_INCREMENT PRIMARY KEY,
-                video_id VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci UNIQUE KEY,
+                video_id BIGINT(20) NOT NULL UNIQUE KEY,
                 name VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                url VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+                description VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+                url VARCHAR(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+                thumbnail VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
                 comments INT(10) NOT NULL DEFAULT 0,
-                duration DECIMAL(12,2) NOT NULL DEFAULT 0
+                interactions INT(10) NOT NULL DEFAULT 0,
+                duration INT(10) NOT NULL DEFAULT 0,
+                upload_date DATETIME DEFAULT NULL
             );";
 
         self::$connection->exec($sql);

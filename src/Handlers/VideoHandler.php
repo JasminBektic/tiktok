@@ -4,12 +4,13 @@ namespace TikTok\Handlers;
 
 use TikTok\Http;
 use GuzzleHttp\Promise;
-use Symfony\Component\DomCrawler\Crawler;
 
 class VideoHandler extends Http
 {
-    /** @var Crawler */
-    private $crawler;
+    /**
+     * @var Object
+     */
+    private $video;
 
     public function __construct()
     {
@@ -27,8 +28,7 @@ class VideoHandler extends Http
 
         $promises = [];
         foreach ($parameters['videoIds'] as $videoId) {
-            $videoPath = "/{$parameters['userId']}/video/$videoId";
-            $promises[$_ENV['SCRAPE_TARGET'] . $videoPath]= $this->guzzleClient->getAsync($videoPath);
+            $promises[]= $this->guzzleClient->getAsync("/@{$parameters['userId']}/video/$videoId");
         }
 
         return Promise\settle($promises)->wait();
@@ -40,65 +40,127 @@ class VideoHandler extends Http
     public function prepareData(array $responses) : array
     {
         $data = [];
-        foreach ($responses as $videoUrl => $response) {
-            $this->crawler = new Crawler($response['value']->getBody()->getContents());
+        foreach ($responses as $response) {
+            $this->extractVideoData($response['value']->getBody()->getContents());
 
-            try {
-                $data[]= [
-                    'videoId'   => explode('/', $videoUrl)[5],
-                    'url'       => $videoUrl,
-                    'name'      => $this->extractName(),
-                    'comments'  => $this->extractComments(),
-                    'duration'  => $this->extractDuration(),
-                ];
-            } catch(\Exception $e) {
-                echo $e->getMessage();
+            if (is_null($this->video)) {
+                continue;
             }
-        }
 
+            $data[]= [
+                'videoId'       => $this->extractVideoId(),
+                'url'           => $this->extractVideoUrl(),
+                'name'          => $this->extractVideoName(),
+                'description'   => $this->extractVideoDescription(),
+                'thumbnail'     => $this->extractVideoThumbnail(),
+                'comments'      => $this->extractVideoComments(),
+                'interactions'  => $this->extractVideoInteractions(),
+                'duration'      => $this->extractVideoDuration(),
+                'uploadDate'    => $this->extractVideoUploadDate(),
+            ];
+        }
+        
         return $data;
+    }
+
+    /**
+     * Extract user data from encoded string
+     */
+    public function extractVideoData(string $dataEncoded) : ?object
+    {
+        preg_match(
+            '/<script type="application\/ld\+json" id="videoObject">(.*?)<\/script>/',
+            $dataEncoded, 
+            $videoData
+        );
+        $videoDataDecoded = json_decode(end($videoData));
+
+        is_object($videoDataDecoded) ? 
+            $this->video = $videoDataDecoded : 
+            $this->video = null;
+
+        return $this->video;
+    }
+
+    /**
+     * video_id
+     */
+    private function extractVideoId() : int
+    {
+        return array_pad(
+            explode('video/', $this->video->mainEntityOfPage->{'@id'}),
+            2,
+            null
+        )[1];
+    }
+
+    /**
+     * url
+     */
+    private function extractVideoUrl() : string
+    {
+        return $this->video->contentUrl;
     }
 
     /**
      * name
      */
-    private function extractName() : string
+    private function extractVideoName() : string
     {
-        return ($node = $this->crawler->filter('#main .content-container .video-meta-title > strong'))->count() > 0 ? $node->text() : '';
+        return $this->video->name;
+    }
+
+    /**
+     * description
+     */
+    private function extractVideoDescription() : string
+    {
+        return $this->video->description;
+    }
+
+    /**
+     * thumbnail
+     */
+    private function extractVideoThumbnail() : string
+    {
+        return reset($this->video->thumbnailUrl);
     }
 
     /**
      * comments
      */
-    private function extractComments() : string
+    private function extractVideoComments() : int
     {
-        if (($node = $this->crawler->filter('#main .content-container .video-meta'))->count() == 0) {
-            return 0;
-        }
+        return $this->video->commentCount;
+    }
 
-        preg_match(
-            '/· (.*?) /', 
-            $node->text(),
-            $comments
-        );
-
-        return $comments[1];
+    /**
+     * interactions
+     */
+    private function extractVideoInteractions() : int
+    {
+        return $this->video->interactionCount;
     }
 
     /**
      * duration
      */
-    private function extractDuration() : float
+    private function extractVideoDuration() : int
     {
-        if (($node = $this->crawler->filter('#main .image-card video'))->count() == 0) {
-            return 0;
-        }
+        preg_match(
+            '/PT(.*?)S/',
+            $this->video->duration,
+            $duration
+        );
 
-        $videoUrl = $node->extract(['src'])[0];
+        return end($duration);
+    }
 
-        $cmdOutput = shell_exec("ffprobe -v quiet -print_format json -show_format -show_streams $videoUrl");
-        $cmdOutput = json_decode($cmdOutput, true);
-
-        return $cmdOutput['format']['duration'];
+    /**
+     * upload_date
+     */
+    private function extractVideoUploadDate() : string
+    {
+        return date('Y-m-d H:i:s', strtotime($this->video->uploadDate));
     }
 }
