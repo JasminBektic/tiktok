@@ -24,20 +24,30 @@ class VideoHandlerTest extends TestCase
         $this->assertEmpty($response);
     }
 
-    public function test_fetch_has_alphabetic_key()
+    public function test_video_data_extraction_returns_object()
     {
+        $encodedData = '
+            <script type="application/ld+json" id="videoObject">'
+            .json_encode([
+                'data' => 'testData'
+            ]).
+            '</script>
+        ';
         $videoHandler = new VideoHandler();
-        $response = $videoHandler->fetch([
-            'userId' => '@realmadrid', 
-            'videoIds' => [
-                '6721977173101579526'
-            ]
-        ]);
-
-        $responseArrayKey = key(reset($response));
-        $assertTrue = is_numeric($responseArrayKey) ? false : true;
+        $videoData = $videoHandler->extractVideoData($encodedData);
         
-        $this->assertTrue($assertTrue);
+        $this->assertInstanceOf(stdClass::class, $videoData);
+    }
+
+    public function test_video_data_extraction_returns_null()
+    {
+        $encodedData = '
+            <script>{"data":"falseData"}</script>
+        ';
+        $videoHandler = new VideoHandler();
+        $videoData = $videoHandler->extractVideoData($encodedData);
+        
+        $this->assertNull($videoData);
     }
 
     public function test_prepare_data_return_safe_empty_array()
