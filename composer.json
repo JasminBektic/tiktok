@@ -2,8 +2,6 @@
     "name": "jaskio/tiktok",
     "require": {
         "guzzlehttp/guzzle": "^6.5",
-        "symfony/dom-crawler": "^5.0",
-        "symfony/css-selector": "^5.0",
         "symfony/dotenv": "^5.0"
     },
     "autoload": {
